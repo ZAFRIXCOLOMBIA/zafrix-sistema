@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZAFRIX - Sistema de Gestión</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.4s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #60a5fa 100%);
+        }
+        
+        .stat-card {
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .logo-container {
+            width: 120px;
+            height: 120px;
+            background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==') center/contain no-repeat;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen gradient-bg flex items-center justify-center px-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md fade-in">
+            <div class="text-center mb-8">
+                <div class="w-24 h-24 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <span class="text-white font-black text-4xl">Z</span>
+                </div>
+                <h1 class="text-4xl font-black text-gray-800 mb-1">ZAFRIX</h1>
+                <p class="text-gray-600 font-medium">Sistema de Gestión Empresarial</p>
+                <p class="text-sm text-blue-600 mt-1">Productos de Limpieza</p>
+            </div>
+            
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Usuario</label>
+                    <input type="text" id="username" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Ingresa tu usuario" required>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Contraseña</label>
+                    <input type="password" id="password" class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="••••••••" required>
+                </div>
+                
+                <div class="flex items-center justify-between text-sm">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="ml-2 text-gray-600">Recordarme</span>
+                    </label>
+                    <a href="#" class="text-blue-600 hover:text-blue-700 font-medium">¿Olvidaste tu contraseña?</a>
+                </div>
+                
+                <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl font-bold hover:shadow-xl transition duration-300 transform hover:scale-105">
+                    Iniciar Sesión
+                </button>
+            </form>
+            
+            <div id="loginError" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"></div>
+            
+            <div class="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                <p class="text-xs font-bold text-blue-800 mb-2">👤 Usuarios de Prueba:</p>
+                <p class="text-xs text-blue-700">Socios: DanielZafrix, BeatrizZafrix, MarthaZafrix, FredyZafrix</p>
+                <p class="text-xs text-blue-700 mt-1">Contraseña: <span class="font-mono bg-blue-100 px-2 py-0.5 rounded">zafrix2026</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="mainApp" class="hidden">
+        <!-- Header -->
+        <header class="bg-white shadow-md border-b-2 border-blue-100 sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center shadow-lg">
+                        <span class="text-white font-black text-2xl">Z</span>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-black text-gray-800">ZAFRIX</h1>
+                        <p class="text-xs text-blue-600 font-semibold">Productos de Limpieza</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-right">
+                        <p class="text-sm font-bold text-gray-800" id="userDisplayName">Usuario</p>
+                        <p class="text-xs text-blue-600 font-semibold" id="userRole">Rol</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-black text-lg shadow-lg" id="userAvatar">
+                        U
+                    </div>
+                    <button onclick="logout()" class="text-sm text-red-600 hover:text-red-800 font-bold px-4 py-2 rounded-lg hover:bg-red-50 transition">
+                        Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="bg-white border-b-2 border-blue-100 sticky top-[89px] z-40 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="flex space-x-2 overflow-x-auto py-2" id="mainTabs"></div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 py-6 min-h-screen">
+            <div id="tabContent"></div>
+        </main>
+    </div>
+
+    <script>
+        // ============================================
+        // SUPABASE CONFIGURATION
+        // ============================================
+        const SUPABASE_URL = 'https://pgrqbymapifsbutcmdrw.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBncnFieW1hcGlmc2J1dGNtZHJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2Mzg2NzEsImV4cCI6MjA4ODIxNDY3MX0.6yJpGc1OIJUzlINflsInR5cCI6IkpXVCJ9';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentUser = null;
+
+        // ============================================
+        // LOGIN FUNCTIONALITY
+        // ============================================
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value.toLowerCase().trim();
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('loginError');
+            
+            try {
+                // Query user from database
+                const { data: users, error } = await supabase
+                    .from('usuarios')
+                    .select('*')
+                    .eq('username', username)
+                    .eq('password', password)
+                    .eq('activo', true)
+                    .single();
+                
+                if (error || !users) {
+                    errorDiv.textContent = 'Usuario o contraseña incorrectos';
+                    errorDiv.classList.remove('hidden');
+                    return;
+                }
+                
+                currentUser = users;
+                
+                // Log audit
+                await addAuditLog('Inicio de sesión', `${users.nombre} inició sesión`);
+                
+                // Hide login, show app
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                errorDiv.classList.add('hidden');
+                
+                // Load user interface
+                await loadUserInterface();
+                
+            } catch (err) {
+                console.error('Error:', err);
+                errorDiv.textContent = 'Error al conectar con el servidor';
+                errorDiv.classList.remove('hidden');
+            }
+        });
+
+        // ============================================
+        // LOGOUT
+        // ============================================
+        async function logout() {
+            if (currentUser) {
+                await addAuditLog('Cierre de sesión', `${currentUser.nombre} cerró sesión`);
+            }
+            currentUser = null;
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('loginForm').reset();
+        }
+
+        // ============================================
+        // AUDIT LOG
+        // ============================================
+        async function addAuditLog(action, details) {
+            if (!currentUser) return;
+            
+            try {
+                await supabase
+                    .from('auditoria')
+                    .insert({
+                        usuario_id: currentUser.id,
+                        usuario_nombre: currentUser.nombre,
+                        accion: action,
+                        detalle: details
+                    });
+            } catch (err) {
+                console.error('Error logging audit:', err);
+            }
+        }
+
+        // ============================================
+        // LOAD USER INTERFACE
+        // ============================================
+        async function loadUserInterface() {
+            // Update header
+            document.getElementById('userDisplayName').textContent = currentUser.nombre;
+            document.getElementById('userAvatar').textContent = currentUser.avatar;
+            
+            const roleNames = {
+                'socio': '👑 Socio',
+                'empleado': '👤 Empleado',
+                'freelance': '💼 Freelance',
+                'proveedor': '🏭 Proveedor'
+            };
+            document.getElementById('userRole').textContent = roleNames[currentUser.rol];
+            
+            // Load tabs
+            const tabs = getTabs(currentUser.rol);
+            const tabsHTML = tabs.map(tab => 
+                `<button class="tab px-4 py-3 text-sm font-bold text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition whitespace-nowrap" data-tab="${tab.id}">
+                    ${tab.icon} ${tab.name}
+                </button>`
+            ).join('');
+            
+            document.getElementById('mainTabs').innerHTML = tabsHTML;
+            
+            // Add click listeners
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    switchTab(this.getAttribute('data-tab'));
+                });
+            });
+            
+            // Load first tab
+            if (tabs.length > 0) {
+                await switchTab(tabs[0].id);
+            }
+        }
+
+        // ============================================
+        // GET TABS BASED ON ROLE
+        // ============================================
+        function getTabs(role) {
+            const allTabs = {
+                dashboard: { id: 'dashboard', name: 'Dashboard', icon: '📊' },
+                productos: { id: 'productos', name: 'Productos', icon: '🧴' },
+                clientes: { id: 'clientes', name: 'Clientes', icon: '🏢' },
+                proveedores: { id: 'proveedores', name: 'Proveedores', icon: '🏭' },
+                ventas: { id: 'ventas', name: 'Ventas', icon: '💰' },
+                comisiones: { id: 'comisiones', name: 'Comisiones', icon: '💵' },
+                auditoria: { id: 'auditoria', name: 'Auditoría', icon: '📝' }
+            };
+            
+            switch(role) {
+                case 'socio':
+                    return Object.values(allTabs);
+                case 'empleado':
+                    return [allTabs.dashboard, allTabs.productos, allTabs.ventas, allTabs.clientes];
+                case 'freelance':
+                    return [allTabs.comisiones];
+                case 'proveedor':
+                    return [allTabs.dashboard, allTabs.ventas];
+                default:
+                    return [allTabs.dashboard];
+            }
+        }
+
+        // ============================================
+        // SWITCH TAB
+        // ============================================
+        async function switchTab(tabId) {
+            // Update active styling
+            document.querySelectorAll('.tab').forEach(tab => {
+                if (tab.getAttribute('data-tab') === tabId) {
+                    tab.classList.add('text-blue-600', 'bg-blue-50');
+                    tab.classList.remove('text-gray-600');
+                } else {
+                    tab.classList.remove('text-blue-600', 'bg-blue-50');
+                    tab.classList.add('text-gray-600');
+                }
+            });
+            
+            // Load content
+            const content = await getTabContent(tabId);
+            document.getElementById('tabContent').innerHTML = content;
+            document.getElementById('tabContent').classList.add('fade-in');
+        }
+
+        // ============================================
+        // GET TAB CONTENT
+        // ============================================
+        async function getTabContent(tabId) {
+            switch(tabId) {
+                case 'dashboard':
+                    return await getDashboardContent();
+                case 'productos':
+                    return await getProductosContent();
+                case 'clientes':
+                    return await getClientesContent();
+                case 'proveedores':
+                    return await getProveedoresContent();
+                case 'comisiones':
+                    return await getComisionesContent();
+                case 'auditoria':
+                    return await getAuditoriaContent();
+                case 'ventas':
+                    return getVentasContent();
+                default:
+                    return '<div class="text-center py-20"><p class="text-gray-600">Contenido en desarrollo</p></div>';
+            }
+        }
+
+        // ============================================
+        // DASHBOARD
+        // ============================================
+        async function getDashboardContent() {
+            const isSocio = currentUser.rol === 'socio';
+            
+            // Get recent audit logs
+            const { data: logs } = await supabase
+                .from('auditoria')
+                .select('*')
+                .order('timestamp', { ascending: false })
+                .limit(5);
+            
+            return `
+                <div class="fade-in">
+                    <div class="mb-6">
+                        <h2 class="text-3xl font-black text-gray-800">Bienvenido, ${currentUser.nombre}</h2>
+                        <p class="text-gray-600 text-lg">Sistema de Gestión ZAFRIX</p>
+                    </div>
+
+                    ${isSocio ? `
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                        <div class="stat-card bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-xl p-6 text-white">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-semibold opacity-90">Ventas del Mes</span>
+                                <span class="text-4xl">💰</span>
+                            </div>
+                            <p class="text-4xl font-black">$7.5M</p>
+                            <p class="text-sm mt-2 opacity-90">↑ 18.5% vs mes anterior</p>
+                        </div>
+
+                        <div class="stat-card bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-xl p-6 text-white">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-semibold opacity-90">Utilidad Neta</span>
+                                <span class="text-4xl">📊</span>
+                            </div>
+                            <p class="text-4xl font-black">$2.8M</p>
+                            <p class="text-sm mt-2 opacity-90">37.3% margen</p>
+                        </div>
+
+                        <div class="stat-card bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-semibold opacity-90">Productos</span>
+                                <span class="text-4xl">🧴</span>
+                            </div>
+                            <p class="text-4xl font-black">4,540</p>
+                            <p class="text-sm mt-2 opacity-90">Unidades vendidas</p>
+                        </div>
+
+                        <div class="stat-card bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl shadow-xl p-6 text-white">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-semibold opacity-90">Clientes</span>
+                                <span class="text-4xl">🏢</span>
+                            </div>
+                            <p class="text-4xl font-black">3</p>
+                            <p class="text-sm mt-2 opacity-90">Activos</p>
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <div class="bg-white rounded-2xl shadow-xl p-6 border-2 border-blue-100">
+                        <h3 class="text-xl font-black text-gray-800 mb-4">📋 Actividad Reciente</h3>
+                        <div class="space-y-3">
+                            ${logs && logs.length > 0 ? logs.map(log => `
+                                <div class="flex items-start space-x-3 p-4 hover:bg-blue-50 rounded-xl transition">
+                                    <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                        <span class="font-black text-blue-600">${log.usuario_nombre.charAt(0)}</span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-bold text-gray-900">${log.accion}</p>
+                                        <p class="text-xs text-gray-600">${log.detalle}</p>
+                                        <p class="text-xs text-gray-400 mt-1">${new Date(log.timestamp).toLocaleString('es-CO')}</p>
+                                    </div>
+                                </div>
+                            `).join('') : '<p class="text-gray-500 text-center py-8">No hay actividad reciente</p>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ============================================
+        // PRODUCTOS
+        // ============================================
+        async function getProductosContent() {
+            const canEdit = currentUser.rol === 'socio';
+            
+            const { data: productos } = await supabase
+                .from('productos')
+                .select('*')
+                .eq('activo', true)
+                .order('nombre');
+            
+            return `
+                <div class="fade-in">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h2 class="text-3xl font-black text-gray-800">Catálogo ZAFRIX</h2>
+                            <p class="text-gray-600 text-lg">Gestión de productos</p>
+                        </div>
+                        ${canEdit ? `
+                        <button onclick="alert('Funcionalidad en desarrollo')" class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl font-bold hover:shadow-xl transition transform hover:scale-105">
+                            + Agregar Producto
+                        </button>
+                        ` : ''}
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-xl overflow-hidden border-2 border-blue-100">
+                        <table class="w-full">
+                            <thead class="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+                                <tr>
+                                    <th class="px-6 py-4 text-left text-sm font-black uppercase">Producto</th>
+                                    <th class="px-6 py-4 text-left text-sm font-black uppercase">Precio</th>
+                                    <th class="px-6 py-4 text-left text-sm font-black uppercase">Costo</th>
+                                    <th class="px-6 py-4 text-left text-sm font-black uppercase">Margen</th>
+                                    <th class="px-6 py-4 text-left text-sm font-black uppercase">Stock</th>
+                                    ${canEdit ? '<th class="px-6 py-4 text-left text-sm font-black uppercase">Acciones</th>' : ''}
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                ${productos && productos.length > 0 ? productos.map(prod => {
+                                    const margen = ((prod.precio - prod.costo) / prod.precio * 100).toFixed(1);
+                                    return `
+                                    <tr class="hover:bg-blue-50 transition">
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center">
+                                                <div class="w-14 h-14 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center mr-3 shadow-lg">
+                                                    <span class="text-white text-2xl">🧴</span>
+                                                </div>
+                                                <div>
+                                                    <p class="font-bold text-gray-900">${prod.nombre}</p>
+                                                    <p class="text-sm text-gray-500">${prod.sku}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 text-sm font-black text-gray-900">$${Number(prod.precio).toLocaleString('es-CO')}</td>
+                                        <td class="px-6 py-4 text-sm font-semibold text-gray-600">$${Number(prod.costo).toLocaleString('es-CO')}</td>
+                                        <td class="px-6 py-4">
+                                            <span class="px-3 py-1 text-sm font-black bg-green-100 text-green-800 rounded-full">${margen}%</span>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span class="px-3 py-1 text-sm font-black ${prod.stock > 1000 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'} rounded-full">
+                                                ${prod.stock} unid.
+                                            </span>
+                                        </td>
+                                        ${canEdit ? `
+                                        <td class="px-6 py-4 text-sm space-x-2">
+                                            <button onclick="alert('Editar: ${prod.nombre}')" class="text-blue-600 hover:text-blue-800 font-bold">Editar</button>
+                                        </td>
+                                        ` : ''}
+                                    </tr>
+                                    `;
+                                }).join('') : '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500">No hay productos registrados</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ============================================
+        // CLIENTES
+        // ============================================
+        async function getClientesContent() {
+            const canEdit = currentUser.rol === 'socio';
+            
+            const { data: clientes } = await supabase
+                .from('clientes')
+                .select('*')
+                .eq('activo', true)
+                .order('nombre');
+            
+            return `
+                <div class="fade-in">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h2 class="text-3xl font-black text-gray-800">Gestión de Clientes</h2>
+                            <p class="text-gray-600 text-lg">Cartera de clientes ZAFRIX</p>
+                        </div>
+                        ${canEdit ? `
+                        <button onclick="alert('Funcionalidad en desarrollo')" class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl font-bold hover:shadow-xl transition transform hover:scale-105">
+                            + Agregar Cliente
+                        </button>
+                        ` : ''}
+                    </div>
+
+                    <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl shadow-xl p-6 mb-6 text-white">
+                        <h3 class="text-2xl font-black mb-4">🎯 Objetivo: Almacenes de Cadena</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                            ${['Éxito', 'Euro', 'Carulla', 'D1', 'Ara'].map(cadena => `
+                                <div class="bg-white bg-opacity-20 rounded-xl p-4 text-center backdrop-blur border-2 border-white border-opacity-30">
+                                    <p class="font-black text-lg">${cadena}</p>
+                                    <p class="text-sm mt-1 opacity-90">Prospecto</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-xl overflow-hidden border-2 border-blue-100">
+                        <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
+                            <h3 class="text-xl font-black text-white">Clientes Actuales</h3>
+                        </div>
+                        <table class="w-full">
+                            <thead class="bg-blue-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-black text-gray-700 uppercase">Cliente</th>
+                                    <th class="px-6 py-3 text-left text-xs font-black text-gray-700 uppercase">Tipo</th>
+                                    <th class="px-6 py-3 text-left text-xs font-black text-gray-700 uppercase">Ventas</th>
+                                    <th class="px-6 py-3 text-left text-xs font-black text-gray-700 uppercase">Última Compra</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                ${clientes && clientes.length > 0 ? clientes.map(cliente => `
+                                    <tr class="hover:bg-blue-50 transition">
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center">
+                                                <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mr-3 shadow-lg">
+                                                    <span class="text-white font-black">${cliente.nombre.charAt(0)}</span>
+                                                </div>
+                                                <div>
+                                                    <p class="font-bold text-gray-900">${cliente.nombre}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span class="px-3 py-1 text-xs font-black bg-blue-100 text-blue-800 rounded-full capitalize">${cliente.tipo}</span>
+                                        </td>
+                                        <td class="px-6 py-4 text-sm font-black text-gray-900">$${Number(cliente.ventas_totales).toLocaleString('es-CO')}</td>
+                                        <td class="px-6 py-4 text-sm font-semibold text-gray-600">${cliente.ultima_compra ? new Date(cliente.ultima_compra).toLocaleDateString('es-CO') : 'N/A'}</td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="4" class="px-6 py-8 text-center text-gray-500">No hay clientes registrados</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ============================================
+        // PROVEEDORES
+        // ============================================
+        async function getProveedoresContent() {
+            const canEdit = currentUser.rol === 'socio';
+            
+            const { data: proveedores } = await supabase
+                .from('proveedores')
+                .select('*')
+                .eq('activo', true)
+                .order('nombre');
+            
+            return `
+                <div class="fade-in">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h2 class="text-3xl font-black text-gray-800">Gestión de Proveedores</h2>
+                            <p class="text-gray-600 text-lg">Materia prima ZAFRIX</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-xl p-6 mb-6 border-2 border-blue-100">
+                        <h3 class="text-xl font-black text-gray-800 mb-4">📦 Materias Primas</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                            ${['Ácido Sulfónico', 'Texapon 70%', 'Cocoamida', 'Glicerina', 'Soda Cáustica', 'Goma Xantana', 'EDTA', 'Colorante', 'Aromatizante', 'Betaína', 'Probetaína', 'Envases'].map(mp => `
+                                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 text-center border-2 border-blue-200">
+                                    <p class="text-xs font-bold text-gray-700">${mp}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-xl overflow-hidden border-2 border-blue-100">
+                        <table class="w-full">
+                            <thead class="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+                                <tr>
+                                    <th class="px-6 py-4 text-left text-sm font-black uppercase">Proveedor</th>
+                                    <th class="px-6 py-4 text-left text-sm font-black uppercase">Productos</th>
+                                    <th class="px-6 py-4 text-left text-sm font-black uppercase">Compras</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                ${proveedores && proveedores.length > 0 ? proveedores.map(prov => `
+                                    <tr class="hover:bg-blue-50 transition">
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center">
+                                                <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-blue-400 rounded-full flex items-center justify-center mr-3 shadow-lg">
+                                                    <span class="text-white font-black text-xl">🏭</span>
+                                                </div>
+                                                <div>
+                                                    <p class="font-bold text-gray-900">${prov.nombre}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="flex flex-wrap gap-1">
+                                                ${prov.productos_suministrados && prov.productos_suministrados.map(prod => `
+                                                    <span class="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-700 rounded">${prod}</span>
+                                                `).join('')}
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 text-sm font-black text-gray-900">$${Number(prov.compras_totales).toLocaleString('es-CO')}</td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="3" class="px-6 py-8 text-center text-gray-500">No hay proveedores registrados</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ============================================
+        // COMISIONES
+        // ============================================
+        async function getComisionesContent() {
+            return `
+                <div class="fade-in">
+                    <div class="mb-6">
+                        <h2 class="text-3xl font-black text-gray-800">Sistema de Comisiones</h2>
+                        <p class="text-gray-600 text-lg">En desarrollo</p>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-xl p-12 text-center border-2 border-blue-100">
+                        <p class="text-gray-600 text-lg">Módulo en desarrollo</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ============================================
+        // VENTAS
+        // ============================================
+        function getVentasContent() {
+            return `
+                <div class="fade-in">
+                    <div class="mb-6">
+                        <h2 class="text-3xl font-black text-gray-800">Registro de Ventas</h2>
+                        <p class="text-gray-600 text-lg">En desarrollo</p>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-xl p-12 text-center border-2 border-blue-100">
+                        <p class="text-gray-600 text-lg">Módulo en desarrollo</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ============================================
+        // AUDITORÍA
+        // ============================================
+        async function getAuditoriaContent() {
+            const { data: logs } = await supabase
+                .from('auditoria')
+                .select('*')
+                .order('timestamp', { ascending: false })
+                .limit(50);
+            
+            return `
+                <div class="fade-in">
+                    <div class="mb-6">
+                        <h2 class="text-3xl font-black text-gray-800">Registro de Auditoría</h2>
+                        <p class="text-gray-600 text-lg">Histórico de cambios en el sistema</p>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-xl overflow-hidden border-2 border-blue-100">
+                        <table class="w-full">
+                            <thead class="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+                                <tr>
+                                    <th class="px-6 py-4 text-left text-sm font-black uppercase">Fecha</th>
+                                    <th class="px-6 py-4 text-left text-sm font-black uppercase">Usuario</th>
+                                    <th class="px-6 py-4 text-left text-sm font-black uppercase">Acción</th>
+                                    <th class="px-6 py-4 text-left text-sm font-black uppercase">Detalles</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                ${logs && logs.length > 0 ? logs.map(log => `
+                                    <tr class="hover:bg-blue-50 transition">
+                                        <td class="px-6 py-4 text-sm font-semibold text-gray-600">${new Date(log.timestamp).toLocaleString('es-CO')}</td>
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center">
+                                                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-2">
+                                                    <span class="text-sm font-black text-blue-600">${log.usuario_nombre.charAt(0)}</span>
+                                                </div>
+                                                <span class="text-sm font-bold text-gray-900">${log.usuario_nombre}</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span class="px-3 py-1 text-xs font-black bg-blue-100 text-blue-800 rounded-full">${log.accion}</span>
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-gray-600">${log.detalle}</td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="4" class="px-6 py-8 text-center text-gray-500">No hay registros de auditoría</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
